@@ -46,10 +46,11 @@ def encode_header(path):
     assert len(header) == header_size
     return header
 
-def decompress(archive):
+def decode(archive):
     with open(archive, 'rb') as f:
         while 1:
             block = f.read(header_size)
+            assert len(block) == header_size, 'Error, short read, file possibly truncated'
             if block == eof_block:
                 break
 
@@ -60,12 +61,14 @@ def decompress(archive):
                 os.makedirs(dname, mode=0o755, exist_ok=True)
 
             with open(path, 'wb') as out:
-                out.write(f.read(size))
+                data = f.read(size)
+                assert len(data) == size, 'Error, short read, file possibly truncated'
+                out.write(data)
 
             os.chmod(path, 0o644)
             os.utime(path, (mtime, mtime))
 
-def compress(archive, files):
+def encode(archive, files):
     with open(archive, 'wb') as f:
         for fname in files:
             if os.path.isfile(fname):
@@ -90,9 +93,9 @@ def main(argv):
         return
 
     if argv[0] == '-a':
-        compress(argv[1], argv[2:])
+        encode(argv[1], argv[2:])
     else:
-        decompress(argv[1])
+        decode(argv[1])
 
 if __name__ == '__main__':
     main(sys.argv[1:])
